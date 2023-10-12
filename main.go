@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"waitlist/middleware"
@@ -20,8 +21,9 @@ func main() {
 	router := gin.Default()
 
 	port := os.Getenv("PORT")
-	if port == "" {
-		port = ":8080"
+	portAddress := fmt.Sprintf(":%s", port)
+	if portAddress == "" {
+		portAddress = ":8080"
 	}
 
 	router.Use(middleware.CORSMiddleware())
