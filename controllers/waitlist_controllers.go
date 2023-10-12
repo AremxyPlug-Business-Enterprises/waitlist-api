@@ -31,12 +31,24 @@ func (w *Waitlist) AddToWaitlist() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Error": "Unable to bind waitlist"})
 		}
 
-		_, err := collection.InsertOne(ctx, waitlistEntry)
-		if err != nil {
+		filter := bson.M{"email": waitlistEntry.Email}
+		result := collection.FindOne(ctx, filter)
+
+		entry := models.WaitlistEntry{}
+		err := result.Decode(&entry)
+		if entry.Email != "" {
+			c.AbortWithStatusJSON(http.StatusAlreadyReported, gin.H{"message": "Email already added to waitlist"})
+		}
+		if err == mongo.ErrNoDocuments {
+			_, err := collection.InsertOne(ctx, waitlistEntry)
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, "Database error")
+			}
+			c.JSON(http.StatusOK, gin.H{"message": "User added to waitlist"})
+		} else if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, "Database error")
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "User added to waitlist"})
 	}
 }
 
