@@ -29,7 +29,7 @@ func main() {
 	router.Use(middleware.CORSMiddleware())
 
 	routes.SetupRoutes(router)
-	if err := router.Run(port); err != nil {
+	if err := router.Run(portAddress); err != nil {
 		log.Fatal("Unable to start router: ", err)
 	}
 }
