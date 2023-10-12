@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 	"waitlist/middleware"
 	"waitlist/routes"
 
@@ -18,7 +19,10 @@ func main() {
 
 	router := gin.Default()
 
-	port := ":8080"
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = ":8080"
+	}
 
 	router.Use(middleware.CORSMiddleware())
 
