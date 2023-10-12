@@ -13,6 +13,7 @@ import (
 
 func main() {
 
+	gin.SetMode(gin.ReleaseMode)
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading environment variables")
@@ -21,10 +22,10 @@ func main() {
 	router := gin.Default()
 
 	port := os.Getenv("PORT")
-	portAddress := fmt.Sprintf(":%s", port)
-	if portAddress == "" {
-		portAddress = ":8080"
+	if port == "" {
+		port = "8080"
 	}
+	portAddress := fmt.Sprintf(":%s", port)
 
 	router.Use(middleware.CORSMiddleware())
 
