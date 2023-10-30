@@ -77,3 +77,34 @@ func (w *Waitlist) GetWaitList() gin.HandlerFunc {
 		c.JSON(http.StatusOK, waitlist)
 	}
 }
+
+// delete email from waitlist
+func (w *Waitlist) DeleteFromWaitlist() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		collection := w.db.Collection("waitlist")
+		ctx := context.Background()
+		var waitlistEntry models.WaitlistEntry
+
+		if err := c.BindJSON(&waitlistEntry); err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Error": "Unable to bind waitlist"})
+		}
+
+		filter := bson.M{"email": waitlistEntry.Email}
+		result := collection.FindOne(ctx, filter)
+
+		entry := models.WaitlistEntry{}
+		err := result.Decode(&entry)
+		if err == mongo.ErrNoDocuments {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Email not found"})
+		} else if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, "Database error")
+		}
+
+		_, err = collection.DeleteOne(ctx, filter)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, "Database error")
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Email deleted from waitlist"})
+	}
+}
