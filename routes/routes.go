@@ -12,5 +12,5 @@ func SetupRoutes(router *gin.Engine) {
 
 	router.POST("/api/addWaitlist", wt.AddToWaitlist())
 	router.GET("/api/getWaitlist", wt.GetWaitList())
-	router.DELETE("/api/deleteWaitlist", wt.DeleteFromWaitlist())
+	router.DELETE("/api/deleteWaitlist/:email", wt.DeleteFromWaitlist())
 }
