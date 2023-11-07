@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"time"
 	"waitlist/models"
 
 	"github.com/gin-gonic/gin"
@@ -40,6 +41,7 @@ func (w *Waitlist) AddToWaitlist() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusAlreadyReported, gin.H{"message": "Email already added to waitlist"})
 		}
 		if err == mongo.ErrNoDocuments {
+			waitlistEntry.Timestamp = time.Now().Unix()
 			_, err := collection.InsertOne(ctx, waitlistEntry)
 			if err != nil {
 				c.AbortWithStatusJSON(http.StatusInternalServerError, "Database error")
