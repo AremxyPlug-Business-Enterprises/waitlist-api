@@ -35,7 +35,7 @@ func (w *Waitlist) AddToWaitlist() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := context.Background()
 		var waitlistEntry models.WaitlistEntry
-		collection := w.db.Collection("waitlist")
+		collection := w.db.Collection("Waitlist")
 
 		if err := c.BindJSON(&waitlistEntry); err != nil {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Error": "Unable to bind waitlist"})
@@ -50,12 +50,6 @@ func (w *Waitlist) AddToWaitlist() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusAlreadyReported, gin.H{"message": "Email already added to waitlist"})
 		}
 
-		err = w.sendMsg(waitlistEntry.Email, "waitlist-signup", WaitlistAlias)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Unable to send email"})
-		}
-		c.JSON(http.StatusOK, gin.H{"message": "Email sent to waitlist"})
-
 		if err == mongo.ErrNoDocuments {
 			waitlistEntry.Timestamp = time.Now().Unix()
 			_, err := collection.InsertOne(ctx, waitlistEntry)
@@ -66,6 +60,11 @@ func (w *Waitlist) AddToWaitlist() gin.HandlerFunc {
 		} else if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, "Database error")
 		}
+		err = w.sendMsg(waitlistEntry.Email, "waitlist-signup", WaitlistAlias)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Unable to send email"})
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "Email sent to waitlist"})
 
 	}
 }
