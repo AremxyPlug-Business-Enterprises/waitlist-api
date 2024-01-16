@@ -35,7 +35,7 @@ func (w *Waitlist) AddToWaitlist() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := context.Background()
 		var waitlistEntry models.WaitlistEntry
-		collection := w.db.Collection("Waitlist")
+		collection := w.db.Collection("waitlist")
 
 		if err := c.BindJSON(&waitlistEntry); err != nil {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Error": "Unable to bind waitlist"})
