@@ -7,16 +7,19 @@ import (
 	"net/http"
 	"time"
 	"waitlist/lib/emailclient"
+	"waitlist/middleware"
 	"waitlist/models"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Waitlist struct {
 	db          *mongo.Database
 	emailclient emailclient.EmailClient
+	auth        *middleware.AuthConn
 }
 
 const (
@@ -24,10 +27,11 @@ const (
 	WaitlistAlias = "waitlist-signup"
 )
 
-func NewWaitlist(db *mongo.Database, email emailclient.EmailClient) *Waitlist {
+func NewWaitlist(db *mongo.Database, email emailclient.EmailClient, auth *middleware.AuthConn) *Waitlist {
 	return &Waitlist{
 		db:          db,
 		emailclient: email,
+		auth:        auth,
 	}
 }
 
@@ -185,4 +189,83 @@ func (w *Waitlist) sendMsg(Email string, title string, templateID string) error 
 	}
 	fmt.Println("email sent")
 	return nil
+}
+
+func (w *Waitlist) Signin() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		collection := w.db.Collection("admin")
+		ctx := context.Background()
+
+		user := models.SiginDetails{}
+
+		if err := c.BindJSON(&user); err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "unable to decode Json", "msg": err.Error()})
+		}
+
+		filter := bson.M{"email": user.Email}
+		result := collection.FindOne(ctx, filter)
+
+		userDetails := models.SiginDetails{}
+
+		if err := result.Decode(&userDetails); err != nil {
+			if err == mongo.ErrNoDocuments {
+				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "could not find record for email"})
+				return
+			}
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "error while getting record for email", "msg": err.Error()})
+			return
+		}
+
+		valid := comparePasswords(user.Password, userDetails.Password)
+		if !valid {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "incorrect password"})
+			return
+		}
+
+		token, err := w.auth.GenerateJWT(userDetails.Email)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "unable to generate token"})
+			return
+		}
+
+		c.Header("Authorization", token)
+
+		c.JSON(http.StatusAccepted, gin.H{"message": "login successful"})
+	}
+}
+
+func (w *Waitlist) CreateAdmin() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		// check if that email already exists
+		collection := w.db.Collection("admin")
+		ctx := context.Background()
+
+		user := models.SiginDetails{}
+		if err := c.BindJSON(&user); err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "unable to decode Json payload", "message": err.Error()})
+			return
+		}
+
+		hashPasswrd, err := bcrypt.GenerateFromPassword([]byte(user.Password), 8)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password", "message": err.Error()})
+			return
+		}
+
+		user.Password = string(hashPasswrd)
+
+		_, err = collection.InsertOne(ctx, user)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "unable to write to database", "message": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusAccepted, gin.H{"message": "successfully created admin"})
+	}
+}
+
+func comparePasswords(inputPasswrd, hashPasswrd string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hashPasswrd), []byte(inputPasswrd))
+	return err == nil
 }

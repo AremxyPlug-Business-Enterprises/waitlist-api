@@ -7,3 +7,8 @@ type WaitlistEntry struct {
 	Email     string             `bson:"email"`
 	Timestamp int64              `json:"timestamp" bson:"timestamp"`
 }
+
+type SiginDetails struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}

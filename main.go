@@ -29,7 +29,17 @@ func main() {
 
 	router.Use(middleware.CORSMiddleware())
 
-	routes.SetupRoutes(router)
+	// Initialize AuthConn
+	privateKey := os.Getenv("PRIVATE_KEY")
+	publicKey := os.Getenv("PUBLIC_KEY")
+	if privateKey == "" || publicKey == "" {
+		log.Fatal("environment variable not set")
+	}
+	authConn := middleware.NewAuthConn(privateKey, publicKey)
+
+	// Setup routes with AuthMiddleware
+	routes.SetupRoutes(router, authConn)
+
 	if err := router.Run(portAddress); err != nil {
 		log.Fatal("Unable to start router: ", err)
 	}

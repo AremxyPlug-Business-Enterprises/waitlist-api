@@ -1,6 +1,10 @@
 package middleware
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
 
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -11,6 +15,26 @@ func CORSMiddleware() gin.HandlerFunc {
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
+}
+
+func AuthMiddleware(authConn *AuthConn) gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		authToken := c.GetHeader("Authorization")
+
+		if authToken == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "no auth token provided"})
+			return
+		}
+
+		_, err := authConn.ValidateJWT(authToken)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "could not validate auth token"})
 			return
 		}
 
