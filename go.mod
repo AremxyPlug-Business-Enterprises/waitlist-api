@@ -9,9 +9,8 @@ require (
 	go.mongodb.org/mongo-driver v1.16.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.25.0
+	github.com/golang-jwt/jwt/v4 v4.5.0
 )
-
-require github.com/golang-jwt/jwt/v4 v4.5.0
 
 require (
 	github.com/bytedance/sonic v1.11.9 // indirect
