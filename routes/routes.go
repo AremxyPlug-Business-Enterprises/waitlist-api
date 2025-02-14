@@ -16,12 +16,11 @@ func SetupRoutes(router *gin.Engine, authConn *middleware.AuthConn) {
 	// Group routes that require authentication
 	authGroup := router.Group("/api", middleware.AuthMiddleware(authConn))
 	{
-		authGroup.POST("/addWaitlist", wt.AddToWaitlist())
 		authGroup.GET("/getWaitlist", wt.GetWaitList())
 		authGroup.DELETE("/deleteWaitlist/:email", wt.DeleteFromWaitlist())
 	}
 
-	// Routes that do not require authentication
+	router.POST("/addWaitlist", wt.AddToWaitlist())
 	router.POST("/api/signin", wt.Signin())
 	router.POST("/api/create", wt.CreateAdmin())
 }
