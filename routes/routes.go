@@ -20,7 +20,7 @@ func SetupRoutes(router *gin.Engine, authConn *middleware.AuthConn) {
 		authGroup.DELETE("/deleteWaitlist/:email", wt.DeleteFromWaitlist())
 	}
 
-	router.POST("/addWaitlist", wt.AddToWaitlist())
+	router.POST("/api/addWaitlist", wt.AddToWaitlist())
 	router.POST("/api/signin", wt.Signin())
 	router.POST("/api/create", wt.CreateAdmin())
 }
