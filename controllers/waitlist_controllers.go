@@ -43,6 +43,7 @@ func (w *Waitlist) AddToWaitlist() gin.HandlerFunc {
 
 		if err := c.BindJSON(&waitlistEntry); err != nil {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Error": "Unable to bind waitlist"})
+			return
 		}
 
 		filter := bson.M{"email": waitlistEntry.Email}
@@ -52,6 +53,7 @@ func (w *Waitlist) AddToWaitlist() gin.HandlerFunc {
 		err := result.Decode(&entry)
 		if entry.Email != "" {
 			c.AbortWithStatusJSON(http.StatusAlreadyReported, gin.H{"message": "Email already added to waitlist"})
+			return
 		}
 
 		if err == mongo.ErrNoDocuments {
@@ -59,17 +61,19 @@ func (w *Waitlist) AddToWaitlist() gin.HandlerFunc {
 			_, err := collection.InsertOne(ctx, waitlistEntry)
 			if err != nil {
 				c.AbortWithStatusJSON(http.StatusInternalServerError, "Database error")
+				return
 			}
 			c.JSON(http.StatusOK, gin.H{"message": "User added to waitlist"})
 		} else if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, "Database error")
+			return
 		}
 		err = w.sendMsg(waitlistEntry.Email, "waitlist-signup", WaitlistAlias)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "Unable to send email"})
+			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "Email sent to waitlist"})
-
 	}
 }
 
@@ -83,6 +87,7 @@ func (w *Waitlist) GetWaitList() gin.HandlerFunc {
 		if err != nil {
 			log.Println("MongoDv find error:", err)
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "error occured while fetching records"})
+			return
 		}
 		defer cursor.Close(ctx)
 
@@ -91,6 +96,7 @@ func (w *Waitlist) GetWaitList() gin.HandlerFunc {
 			if err := cursor.Decode(&entry); err != nil {
 				log.Println("MongoDb decode error", err)
 				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": "error decoding document"})
+				return
 			}
 			waitlist = append(waitlist, entry)
 		}
@@ -98,37 +104,6 @@ func (w *Waitlist) GetWaitList() gin.HandlerFunc {
 		c.JSON(http.StatusOK, waitlist)
 	}
 }
-
-//// delete email from waitlist
-//func (w *Waitlist) DeleteFromWaitlist() gin.HandlerFunc {
-//	return func(c *gin.Context) {
-//		collection := w.db.Collection("waitlist")
-//		ctx := context.Background()
-//		var waitlistEntry models.WaitlistEntry
-//
-//		if err := c.BindJSON(&waitlistEntry); err != nil {
-//			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Error": "Unable to bind waitlist"})
-//		}
-//
-//		filter := bson.M{"email": waitlistEntry.Email}
-//		result := collection.FindOne(ctx, filter)
-//
-//		entry := models.WaitlistEntry{}
-//		err := result.Decode(&entry)
-//		if err == mongo.ErrNoDocuments {
-//			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "Email not found"})
-//		} else if err != nil {
-//			c.AbortWithStatusJSON(http.StatusInternalServerError, "Database error")
-//		}
-//
-//		_, err = collection.DeleteOne(ctx, filter)
-//		if err != nil {
-//			c.AbortWithStatusJSON(http.StatusInternalServerError, "Database error")
-//		}
-//
-//		c.JSON(http.StatusOK, gin.H{"message": "Email deleted from waitlist"})
-//	}
-//}
 
 // Delete email from waitlist using URL parameters
 func (w *Waitlist) DeleteFromWaitlist() gin.HandlerFunc {
@@ -200,6 +175,7 @@ func (w *Waitlist) Signin() gin.HandlerFunc {
 
 		if err := c.BindJSON(&user); err != nil {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "unable to decode Json", "msg": err.Error()})
+			return
 		}
 
 		filter := bson.M{"email": user.Email}
